@@ -1,17 +1,74 @@
-# simple_calc
+# Simple Calc
 
-A new Flutter project.
+A simple Flutter calculator app built for Android Studio and GitHub.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Basic arithmetic: `+`, `-`, `*`, `/`
+- Clear button
+- Simple dark calculator UI
+- Split into separate files for easier navigation
 
-A few resources to get you started if this is your first Flutter project:
+## Project Structure
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```text
+lib/
+├── main.dart
+├── app.dart
+├── screens/
+│   └── calculator_page.dart
+└── widgets/
+	└── calc_button.dart
+test/
+└── widget_test.dart
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tech Stack
+
+- Flutter
+- Dart
+- Material Design
+
+## Run the App
+
+From the project folder:
+
+```powershell
+cd C:\Users\Amalsha\simple_calc
+flutter pub get
+flutter run -d chrome
+```
+
+To run on an Android emulator or phone:
+
+```powershell
+cd C:\Users\Amalsha\simple_calc
+flutter devices
+flutter run
+```
+
+## Test
+
+```powershell
+cd C:\Users\Amalsha\simple_calc
+flutter test
+```
+
+## GitHub Upload
+
+If this is a new Git repo, use:
+
+```powershell
+git add .
+git commit -m "Initial Flutter calculator app"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/simple_calc.git
+git push -u origin main
+```
+
+## Notes
+
+- The app entry point is `lib/main.dart`
+- The main UI is in `lib/screens/calculator_page.dart`
+- Reusable calculator buttons are in `lib/widgets/calc_button.dart`
+- `flutter analyze` and `flutter test` both pass in this project
