@@ -65,6 +65,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   bool _historyPanelOpen = false;
   double _memory = 0;
   List<_HistoryEntry> _history = <_HistoryEntry>[];
+  int _resultAnimationKey = 0;
 
   @override
   void initState() {
@@ -146,7 +147,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     final normalized = value.abs() < 1e-12 ? 0.0 : value;
     final rounded = normalized.roundToDouble();
     if ((normalized - rounded).abs() < 1e-10) {
-      return rounded.toInt().toString();
+      return _addGrouping(rounded.toInt().toString());
     }
 
     var text = normalized.toStringAsPrecision(12);
@@ -156,7 +157,28 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
     text = text.replaceFirst(RegExp(r'0+$'), '');
     text = text.replaceFirst(RegExp(r'\.$'), '');
-    return text;
+    return _addGrouping(text);
+  }
+
+  String _addGrouping(String numberText) {
+    if (numberText.isEmpty || numberText == 'Error') {
+      return numberText;
+    }
+
+    final negative = numberText.startsWith('-');
+    final unsigned = negative ? numberText.substring(1) : numberText;
+    final parts = unsigned.split('.');
+    final integer = parts.first;
+    if (integer.length < 4) {
+      return numberText;
+    }
+
+    final grouped = integer.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+    final rebuilt = parts.length > 1 ? '$grouped.${parts[1]}' : grouped;
+    return negative ? '-$rebuilt' : rebuilt;
   }
 
   String _operatorSymbol(String op) {
@@ -337,6 +359,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       _firstOperand = null;
       _operator = null;
       _shouldClearDisplay = true;
+      _resultAnimationKey++;
     });
     _recordHistory(expression, resultText);
     _requestKeyboardFocus();
@@ -370,6 +393,14 @@ class _CalculatorPageState extends State<CalculatorPage> {
         }
         expression = 'log(${_formatNumber(value)})';
         break;
+      case 'ln':
+        if (value <= 0) {
+          resultValue = null;
+        } else {
+          resultValue = math.log(value);
+        }
+        expression = 'ln(${_formatNumber(value)})';
+        break;
       case 'sin':
         resultValue = math.sin(value * math.pi / 180);
         expression = 'sin(${_formatNumber(value)}°)';
@@ -385,6 +416,18 @@ class _CalculatorPageState extends State<CalculatorPage> {
       case 'square':
         resultValue = value * value;
         expression = '(${_formatNumber(value)})²';
+        break;
+      case 'cube':
+        resultValue = value * value * value;
+        expression = '(${_formatNumber(value)})³';
+        break;
+      case 'pi':
+        resultValue = math.pi;
+        expression = 'π';
+        break;
+      case 'e':
+        resultValue = math.e;
+        expression = 'e';
         break;
       default:
         return;
@@ -403,6 +446,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       _firstOperand = null;
       _operator = null;
       _shouldClearDisplay = true;
+      _resultAnimationKey++;
     });
     _recordHistory(expression, resultText);
     _requestKeyboardFocus();
@@ -415,6 +459,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       _firstOperand = null;
       _operator = null;
       _shouldClearDisplay = false;
+      _resultAnimationKey++;
     });
     _requestKeyboardFocus();
   }
@@ -450,6 +495,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       _operator = null;
       _shouldClearDisplay = true;
       _historyPanelOpen = false;
+      _resultAnimationKey++;
     });
     _requestKeyboardFocus();
   }
@@ -658,12 +704,19 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ),
                 ),
               ),
-              Text(
-                _scientificMode ? 'Scientific' : 'Basic',
-                style: TextStyle(
-                  color: isDark ? const Color(0xFFB8A9FF) : const Color(0xFF5C3FD0),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+              InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: _toggleScientificMode,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Text(
+                    _scientificMode ? 'Scientific' : 'Basic',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFB8A9FF) : const Color(0xFF5C3FD0),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -680,17 +733,24 @@ class _CalculatorPageState extends State<CalculatorPage> {
               },
               child: Align(
                 alignment: Alignment.bottomRight,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.bottomRight,
-                  child: Text(
-                    _display,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : const Color(0xFF101010),
-                      fontSize: 72,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.3,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  child: FittedBox(
+                    key: ValueKey<String>('$_resultAnimationKey-$_display'),
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.bottomRight,
+                    child: Text(
+                      _display,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF101010),
+                        fontSize: 72,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1.3,
+                      ),
                     ),
                   ),
                 ),
@@ -773,20 +833,52 @@ class _CalculatorPageState extends State<CalculatorPage> {
           CalcButton(label: '÷', color: const Color(0xFFFF9800), onPressed: () => _setBinaryOperator('/'), fontSize: 22),
           CalcButton(label: 'C', color: const Color(0xFFF44336), onPressed: _clearAll, fontSize: 22),
         ]),
-        if (_scientificMode) ...[
-          _buildRow([
-            CalcButton(label: 'sin', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('sin'), fontSize: 17),
-            CalcButton(label: 'cos', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('cos'), fontSize: 17),
-            CalcButton(label: 'tan', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('tan'), fontSize: 17),
-            CalcButton(label: 'log', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('log'), fontSize: 17),
-          ]),
-          _buildRow([
-            CalcButton(label: '√', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('sqrt'), fontSize: 22),
-            CalcButton(label: 'x²', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('square'), fontSize: 20),
-            const Expanded(child: SizedBox.shrink()),
-            const Expanded(child: SizedBox.shrink()),
-          ]),
-        ],
+        ClipRect(
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                final slide = Tween<Offset>(
+                  begin: const Offset(0.0, -0.15),
+                  end: Offset.zero,
+                ).animate(animation);
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: slide, child: child),
+                );
+              },
+              child: !_scientificMode
+                  ? const SizedBox.shrink(key: ValueKey<String>('scientific-off'))
+                  : Column(
+                      key: const ValueKey<String>('scientific-on'),
+                      children: [
+                        _buildRow([
+                          CalcButton(label: 'sin', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('sin'), fontSize: 17),
+                          CalcButton(label: 'cos', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('cos'), fontSize: 17),
+                          CalcButton(label: 'tan', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('tan'), fontSize: 17),
+                          CalcButton(label: 'log', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('log'), fontSize: 17),
+                        ]),
+                        _buildRow([
+                          CalcButton(label: 'ln', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('ln'), fontSize: 17),
+                          CalcButton(label: '√', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('sqrt'), fontSize: 22),
+                          CalcButton(label: 'x²', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('square'), fontSize: 20),
+                          CalcButton(label: 'x³', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('cube'), fontSize: 20),
+                        ]),
+                        _buildRow([
+                          CalcButton(label: 'π', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('pi'), fontSize: 24),
+                          CalcButton(label: 'e', color: const Color(0xFF5D4037), onPressed: () => _applyUnary('e'), fontSize: 22),
+                          const Expanded(child: SizedBox.shrink()),
+                          const Expanded(child: SizedBox.shrink()),
+                        ]),
+                      ],
+                    ),
+            ),
+          ),
+        ),
         _buildRow([
           CalcButton(label: '7', onPressed: () => _appendInput('7')),
           CalcButton(label: '8', onPressed: () => _appendInput('8')),
@@ -853,6 +945,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       _display = _formatNumber(_memory);
       _expressionPreview = 'MR → ${_formatNumber(_memory)}';
       _shouldClearDisplay = true;
+      _resultAnimationKey++;
     });
     _requestKeyboardFocus();
   }
