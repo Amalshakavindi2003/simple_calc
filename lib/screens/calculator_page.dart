@@ -593,30 +593,53 @@ class _CalculatorPageState extends State<CalculatorPage> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Simple Calc'),
+          title: Text(
+            'Simple Calc',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
+              color: isDark ? Colors.white : const Color(0xFF101114),
+            ),
+          ),
           centerTitle: true,
-          backgroundColor: Colors.transparent,
+          toolbarHeight: 72,
+          backgroundColor: isDark ? const Color(0xFF111317) : const Color(0xFFF7F8FC),
+          foregroundColor: isDark ? Colors.white : const Color(0xFF101114),
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
+          shadowColor: Colors.transparent,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              height: 1,
+              color: isDark ? Colors.white10 : Colors.black12,
+            ),
+          ),
           actions: [
-            IconButton(
+            _buildTopBarAction(
               tooltip: _historyPanelOpen ? 'Close history' : 'Open history',
+              icon: _historyPanelOpen ? Icons.chevron_right_rounded : Icons.history_rounded,
               onPressed: _toggleHistoryPanel,
-              icon: Icon(_historyPanelOpen ? Icons.chevron_right_rounded : Icons.history_rounded),
+              isDark: isDark,
             ),
-            IconButton(
+            _buildTopBarAction(
               tooltip: _scientificMode ? 'Hide scientific mode' : 'Show scientific mode',
+              icon: _scientificMode ? Icons.science_rounded : Icons.functions_rounded,
               onPressed: _toggleScientificMode,
-              icon: Icon(_scientificMode ? Icons.science_rounded : Icons.functions_rounded),
+              isDark: isDark,
+              isActive: _scientificMode,
             ),
-            IconButton(
+            _buildTopBarAction(
               tooltip: 'Copy result',
+              icon: Icons.copy_rounded,
               onPressed: _copyResult,
-              icon: const Icon(Icons.copy_rounded),
+              isDark: isDark,
             ),
-            IconButton(
+            _buildTopBarAction(
               tooltip: 'Toggle theme',
+              icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
               onPressed: widget.onToggleTheme,
-              icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
+              isDark: isDark,
             ),
             const SizedBox(width: 4),
           ],
@@ -909,6 +932,55 @@ class _CalculatorPageState extends State<CalculatorPage> {
   Widget _buildRow(List<Widget> widgets) {
     return Row(
       children: widgets,
+    );
+  }
+
+  Widget _buildTopBarAction({
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool isDark,
+    bool isActive = false,
+  }) {
+    final backgroundColor = isActive
+        ? (isDark ? const Color(0xFF322B5E) : const Color(0xFFE0D8FF))
+        : (isDark ? const Color(0xFF1E222B) : Colors.white);
+    final borderColor = isActive
+        ? (isDark ? const Color(0xFF6E5CF7) : const Color(0xFF8E7BFF))
+        : (isDark ? Colors.white12 : Colors.black12);
+    final iconColor = isActive
+        ? (isDark ? const Color(0xFFD5CEFF) : const Color(0xFF5C3FD0))
+        : (isDark ? Colors.white : const Color(0xFF1E2430));
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onPressed,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? Colors.black26 : Colors.black12,
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(icon, size: 20, color: iconColor),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
