@@ -1,20 +1,33 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:simple_calc/app.dart';
 
 void main() {
-  testWidgets('Calculator app loads', (WidgetTester tester) async {
-    await tester.pumpWidget(const CalcApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
+  testWidgets('Calculator app loads with the upgraded controls', (WidgetTester tester) async {
+    await tester.pumpWidget(const CalcApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simple Calc'), findsOneWidget);
     expect(find.text('0'), findsWidgets);
-    expect(find.text('+'), findsOneWidget);
+    expect(find.text('M+'), findsOneWidget);
     expect(find.text('='), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Show scientific mode'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('sin'), findsOneWidget);
+    expect(find.text('log'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Open history'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No calculations yet'), findsOneWidget);
   });
 }
