@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/calc_button.dart';
-import '../services/calculator_engine.dart';
 
 class CalculatorPage extends StatefulWidget {
   const CalculatorPage({super.key, required this.onToggleTheme});
@@ -157,6 +156,29 @@ class _CalculatorPageState extends State<CalculatorPage> {
     } else if (op == 'x2') {
       res = value * value;
       entry = '$value² = ${_formatResult(res)}';
+    } else if (op == 'x3') {
+      res = value * value * value;
+      entry = '$value³ = ${_formatResult(res)}';
+    } else if (op == 'ln') {
+      if (value <= 0) {
+        _display = 'Error';
+        return;
+      }
+      res = math.log(value);
+      entry = 'ln($value) = ${_formatResult(res)}';
+    } else if (op == 'log') {
+      if (value <= 0) {
+        _display = 'Error';
+        return;
+      }
+      res = math.log(value) / math.log(10);
+      entry = 'log($value) = ${_formatResult(res)}';
+    } else if (op == 'pi') {
+      res = math.pi;
+      entry = 'π = ${_formatResult(res)}';
+    } else if (op == 'e') {
+      res = math.e;
+      entry = 'e = ${_formatResult(res)}';
     } else {
       return;
     }
@@ -171,12 +193,35 @@ class _CalculatorPageState extends State<CalculatorPage> {
   String _formatResult(double value) {
     final asText = value.toString();
     if (asText.endsWith('.0')) {
-      return asText.substring(0, asText.length - 2);
+      return _addCommas(asText.substring(0, asText.length - 2));
     }
     if (asText.length > 10) {
-      return value.toStringAsFixed(4).replaceAll(RegExp(r'\.0+$'), '');
+      final formatted = value.toStringAsFixed(4).replaceAll(RegExp(r'\.0+$'), '');
+      return _addCommas(formatted);
     }
-    return asText;
+    return _addCommas(asText);
+  }
+
+  String _addCommas(String numStr) {
+    if (numStr.isEmpty || numStr == '0' || numStr == 'Error') return numStr;
+    
+    final parts = numStr.split('.');
+    final intPart = parts[0];
+    final isNegative = intPart.startsWith('-');
+    final absIntPart = isNegative ? intPart.substring(1) : intPart;
+    
+    // Only add commas if the number is large enough
+    if (absIntPart.length < 4) {
+      return numStr;
+    }
+    
+    final withCommas = absIntPart.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
+    
+    final result = isNegative ? '-$withCommas' : withCommas;
+    return parts.length > 1 ? '$result.${parts[1]}' : result;
   }
 
   void _clearAll() {
@@ -294,6 +339,22 @@ class _CalculatorPageState extends State<CalculatorPage> {
                     CalcButton(label: 'sin', onPressed: () => _applyUnary('sin')),
                     CalcButton(label: 'cos', onPressed: () => _applyUnary('cos')),
                     CalcButton(label: 'tan', onPressed: () => _applyUnary('tan')),
+                  ]),
+
+                if (_scientificMode)
+                  Row(children: [
+                    CalcButton(label: 'ln', onPressed: () => _applyUnary('ln')),
+                    CalcButton(label: 'log', onPressed: () => _applyUnary('log')),
+                    CalcButton(label: 'x³', onPressed: () => _applyUnary('x3')),
+                    CalcButton(label: 'x²', onPressed: () => _applyUnary('x2')),
+                  ]),
+
+                if (_scientificMode)
+                  Row(children: [
+                    CalcButton(label: 'π', onPressed: () => _applyUnary('pi')),
+                    CalcButton(label: 'e', onPressed: () => _applyUnary('e')),
+                    const Expanded(child: SizedBox()),
+                    const Expanded(child: SizedBox()),
                   ]),
 
                 // Row 1: 7, 8, 9
