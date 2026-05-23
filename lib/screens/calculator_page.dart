@@ -7,7 +7,9 @@ import '../widgets/calc_button.dart';
 import '../services/calculator_engine.dart';
 
 class CalculatorPage extends StatefulWidget {
-  const CalculatorPage({super.key});
+  const CalculatorPage({super.key, required this.onToggleTheme});
+
+  final VoidCallback onToggleTheme;
 
   @override
   State<CalculatorPage> createState() => _CalculatorPageState();
