@@ -5,7 +5,7 @@ class CalculatorEngine {
   static double? evaluate(String expression) {
     try {
       final exp = expression.replaceAll('×', '*').replaceAll('÷', '/');
-      final parser = Parser();
+      final parser = ShuntingYardParser();
       final parsed = parser.parse(exp);
       final result = parsed.evaluate(EvaluationType.REAL, ContextModel());
       if (result is num) return result.toDouble();
